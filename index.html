@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Vectoriser: Convert C++ to x86 Intrinsics</title>
+</head>
+
+<body>
+    <style>
+        /* Nexa font, Copyright Fontfabric LTD
+        * Licensed to Jan Bielak
+        * Usage by third parties prohibited
+        * under the Fontfabric EULA
+        */
+        @font-face {
+            font-family: "Nexa";
+            src: url("https://janbielak.com/fonts/Nexa-Regular.woff2");
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: "Nexa";
+            src: url("https://janbielak.com/fonts/Nexa-Bold.woff2");
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: "Nexa";
+            src: url("https://janbielak.com/fonts/Nexa-RegularItalic.woff2");
+            font-weight: normal;
+            font-style: italic;
+        }
+
+        @font-face {
+            font-family: "Nexa";
+            src: url("https://janbielak.com/fonts/Nexa-BoldItalic.woff2");
+            font-weight: bold;
+            font-style: italic;
+        }
+
+        /* Nexa font, Copyright Fontfabric LTD
+        * Licensed to Jan Bielak
+        * Usage by third parties prohibited
+        * under the Fontfabric EULA
+        */
+        @font-face {
+            font-family: "Nexa Text";
+            src: url("https://janbielak.com/fonts/NexaText-Regular.woff2");
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: "Nexa Text";
+            src: url("https://janbielak.com/fonts/NexaText-Bold.woff2");
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: "Nexa Text";
+            src: url("https://janbielak.com/fonts/NexaText-RegularItalic.woff2");
+            font-weight: normal;
+            font-style: italic;
+        }
+
+        @font-face {
+            font-family: "Nexa Text";
+            src: url("https://janbielak.com/fonts/NexaText-BoldItalic.woff2");
+            font-weight: bold;
+            font-style: italic;
+        }
+
+        @font-face {
+            font-family: "Meslo";
+            src: url("https://janbielak.com/Nexa/Meslo.ttf") format("truetype");
+        }
+
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #212121;
+            color: #e7e7e7;
+            font-family: "Nexa Text", sans-serif;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: "Nexa", sans-serif;
+            margin: 0;
+        }
+
+        .content {
+            max-width: 800px;
+            margin: auto;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #1a1a1a;
+            background-color: #262626;
+        }
+
+        textarea {
+            resize: none;
+            width: 100%;
+            color: #e7e7e7;
+            background-color: #191919;
+            border: 1px solid #1a1a1a;
+            border-radius: 10px;
+            height: 700px;
+            font-size: medium;
+            padding: 10px;
+            font-family: 'Courier New', Courier, monospace
+        }
+
+        .args {
+            flex-grow: 1;
+            color: #e7e7e7;
+            background-color: #191919;
+            border: 1px solid #1a1a1a;
+            border-radius: 10px;
+            font-size: medium;
+            font-family: 'Courier New', Courier, monospace
+        }
+
+        .bar {
+            display: flex;
+            margin-bottom: 7px;
+        }
+
+        .compile {
+            background-color: #e7e7e7;
+            color: #191919;
+            border: 1px solid #1a1a1a;
+            border-radius: 10px;
+        }
+
+        .output {
+            overflow-x: scroll;
+            margin: 0;
+        }
+
+        .loading {
+            background: linear-gradient(287deg, #007aff, #96c8ff, #007aff, #007aff, #007aff, #96c8ff, #007aff, #007aff, #007aff, #96c8ff, #007aff, #007aff, #007aff, #96c8ff, #007aff, #007aff);
+            animation: AnimationName 2s linear infinite;
+            background-size: 200% 100%;
+            border: 1px solid #96c8ff;
+            border-radius: 10px;
+            text-align: center;
+            transition: 1s;
+            margin: 0;
+        }
+
+        @keyframes AnimationName {
+            0% {
+                background-position: 100% 0%
+            }
+
+            100% {
+                background-position: 0% 0%
+            }
+        }
+
+        p {
+            margin: 0;
+        }
+
+        a {
+            color: #569cd6;
+        }
+
+        .argument {
+            color: #2a922f;
+        }
+
+        .function {
+            color: #8e42ae;
+        }
+
+        .type {
+            color: #30b6b6;
+        }
+
+    </style>
+
+    <div class="content">
+        <h1>Vectoriser</h1>
+        <p>
+            A very simple transpiler from ordinary C++ to x86 intrinsics. Assumes that you make a function with the
+            prototype <code>__m512 f(__m512 a, __m512 b)</code>. I made it in like 4 hours, so probably has lots of
+            bugs. It's a proof of concept. Internally, it uses <a href="https://godbolt.org">Compiler Explorer</a> to
+            generate assembly. This tool only transpiles assembly to intrinsics.
+        </p>
+
+        <div class="bar">
+            <input class="args" type="text" name="args" id="args" placeholder="-Ofast -std=c++20 -mavx512f" />
+            <button class="compile" onclick="compile()">Compile</button>
+        </div>
+
+        <textarea name="source_code" type="text" id="source_code"></textarea>
+
+        <br>
+
+        <p class="loading" , style="opacity: 0;" , id="progress">Compiling...</p>
+
+        <pre class="output" id="demo"></pre>
+    </div>
+
+    <script>
+        const init_src = `#include <immintrin.h>
+
+__m512 matrix_multiply(__m512 a, __m512 b) {
+    return _mm512_setr_ps(
+        a[0]*b[0]+a[1]*b[4]+a[2]*b[8]+a[3]*b[12],
+        a[0]*b[1]+a[1]*b[5]+a[2]*b[9]+a[3]*b[13],
+        a[0]*b[2]+a[1]*b[6]+a[2]*b[10]+a[3]*b[14],
+        a[0]*b[3]+a[1]*b[7]+a[2]*b[11]+a[3]*b[15],
+
+        a[4]*b[0]+a[5]*b[4]+a[6]*b[8]+a[7]*b[12],
+        a[4]*b[1]+a[5]*b[5]+a[6]*b[9]+a[7]*b[13],
+        a[4]*b[2]+a[5]*b[6]+a[6]*b[10]+a[7]*b[14],
+        a[4]*b[3]+a[5]*b[7]+a[6]*b[11]+a[7]*b[15],
+
+        a[8]*b[0]+a[9]*b[4]+a[10]*b[8]+a[11]*b[12],
+        a[8]*b[1]+a[9]*b[5]+a[10]*b[9]+a[11]*b[13],
+        a[8]*b[2]+a[9]*b[6]+a[10]*b[10]+a[11]*b[14],
+        a[8]*b[3]+a[9]*b[7]+a[10]*b[11]+a[11]*b[15],
+
+        a[12]*b[0]+a[13]*b[4]+a[14]*b[8]+a[15]*b[12],
+        a[12]*b[1]+a[13]*b[5]+a[14]*b[9]+a[15]*b[13],
+        a[12]*b[2]+a[13]*b[6]+a[14]*b[10]+a[15]*b[14],
+        a[12]*b[3]+a[13]*b[7]+a[14]*b[11]+a[15]*b[15]
+    );
+}`;
+        document.getElementById("source_code").value = init_src;
+
+        function trim(s, c) {
+            if (c === "]") c = "\\]";
+            if (c === "^") c = "\\^";
+            if (c === "\\") c = "\\\\";
+            return s.replace(new RegExp(
+                "^[" + c + "]+|[" + c + "]+$", "g"
+            ), "");
+        }
+
+        function addClass(s, c) {
+            return "<span class='" + c + "'>" + s + "</span>";
+        }
+
+        transpile = (line, declared_registers) => {
+            // function name
+            if (line.includes('(')) {
+                tokens = line.split('(');
+                return addClass("__m512", 'type') + ' ' + addClass(tokens[0], 'function') + '(' + addClass("__m512", 'type') + ' ' + addClass('zmm0', 'argument') + ', ' + addClass("__m512", 'type') + ' ' + addClass('zmm1', 'argument') + ') {';
+            }
+
+            translation = {
+                'vaddps': { intrinsic: '_mm512_add_ps', args: [1, 2] },
+                'vsubps': { intrinsic: '_mm512_sub_ps', args: [1, 2] },
+                'vmulps': { intrinsic: '_mm512_mul_ps', args: [1, 2] },
+                'vdivps': { intrinsic: '_mm512_div_ps', args: [1, 2] },
+                'vpermilps': { intrinsic: '_mm512_permute_ps', args: [1, 2] },
+                'vshuff32x4': { intrinsic: '_mm512_shuffle_f32x4', args: [1, 2, 3] },
+                'vshuff64x2': { intrinsic: '_mm512_shuffle_f64x2', args: [1, 2, 3] },
+                'vfmadd231ps': { intrinsic: '_mm512_fmadd_ps', args: [1, 2, 0] },
+                'vfmadd213ps': { intrinsic: '_mm512_fmadd_ps', args: [1, 0, 2] },
+                'vfmadd132ps': { intrinsic: '_mm512_fmadd_ps', args: [0, 2, 1] },
+            }
+
+            // remove comment
+            line = line.split('#')[0]
+            tokens = line.split(' ');
+            tokens = tokens.map((token) => trim(token, ','));
+            tokens = tokens.filter((token) => token != '');
+            statement = {
+                op: tokens[0],
+                args: tokens.slice(1)
+            }
+
+            s = "    ";
+            if (statement.args.length > 0) {
+                if (!declared_registers.includes(statement.args[0])) {
+                    declared_registers.push(statement.args[0]);
+                    s += addClass("__m512 ", 'type');
+                }
+                s += addClass(statement.args[0], 'argument') + " = ";
+            }
+
+            if (statement.op in translation) {
+                intrinsic = translation[statement.op].intrinsic;
+                args = translation[statement.op].args;
+                s += addClass(intrinsic, 'function') + '(' + args.map((arg) => addClass(statement.args[arg], 'argument')).join(', ') + ');';
+            }
+            else if (statement.op === "ret") {
+                s += addClass("return ", 'type') + addClass("zmm0", 'argument') + ';';
+            }
+            else {
+                s += "Unknown intrinsic";
+            }
+
+            return s;
+        }
+
+        compile = () => {
+            document.getElementById("progress").style = "opacity: 1;";
+
+            const api = "https://godbolt.org/api/";
+            const gcc_id = "gsnapshot";
+            const clang_id = "clang_trunk";
+            const compiler_id = gcc_id;
+            const source = document.getElementById('source_code').value;
+            const args = document.getElementById('args').value == "" ? "-Ofast -std=c++20 -mavx512f" : document.getElementById('args').value;
+
+            request = {};
+            request.source = source;
+            request.options = {};
+            request.options.userArguments = "-fno-diagnostics-color " + args;
+            request.options.compilerOptions = {
+                executorRequest: false
+            };
+            request.options.tools = [];
+            request.options.libraries = [];
+            request.lang = "c++";
+
+            fetch(`${api}/compiler/${compiler_id}/compile`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json"
+                },
+                body: JSON.stringify(request)
+            }).then((response) => response.json())
+                .then((data) => {
+                    output = document.getElementById("demo");
+                    output.innerHTML = "";
+                    if (data.code == 1) {
+                        data.stderr.forEach((stderr) => {
+                            output.textContent += stderr.text + '\n';
+                        });
+                    } else {
+                        declared_registers = ['zmm0', 'zmm1'];
+                        data.asm.forEach((asm) => {
+                            output.innerHTML += transpile(asm.text, declared_registers) + '<br>';
+                        });
+                        output.innerHTML += '}';
+                    }
+                    document.getElementById("progress").style = "opacity: 0;";
+                });
+        };
+    </script>
+
+</body>
+
+</html>
