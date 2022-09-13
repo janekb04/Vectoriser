@@ -199,6 +199,8 @@
             bugs. It's a proof of concept. Internally, it uses <a href="https://godbolt.org">Compiler Explorer</a> to
             generate assembly. This tool only transpiles assembly to intrinsics.
         </p>
+        
+        <p class="loading" , style="opacity: 0;" , id="progress">Compiling...</p>
 
         <div class="bar">
             <input class="args" type="text" name="args" id="args" placeholder="-Ofast -std=c++20 -mavx512f" />
@@ -208,8 +210,6 @@
         <textarea name="source_code" type="text" id="source_code"></textarea>
 
         <br>
-
-        <p class="loading" , style="opacity: 0;" , id="progress">Compiling...</p>
 
         <pre class="output" id="demo"></pre>
     </div>
