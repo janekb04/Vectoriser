@@ -204,7 +204,8 @@
 
         <div class="bar">
             <input class="args" type="text" name="args" id="args" placeholder="-Ofast -std=c++20 -mavx512f" />
-            <button class="compile" onclick="compile()">Compile</button>
+            <button class="compile" onclick="compile(gcc_id)">GCC</button>
+            <button class="compile" onclick="compile(clang_id)">GCC</button>
         </div>
 
         <textarea name="source_code" type="text" id="source_code"></textarea>
@@ -256,6 +257,8 @@ __m512 matrix_multiply(__m512 a, __m512 b) {
         }
 
         transpile = (line, declared_registers) => {
+            line = line.split('#')[0];
+            
             // function name
             if (line.includes('(')) {
                 tokens = line.split('(');
@@ -275,8 +278,6 @@ __m512 matrix_multiply(__m512 a, __m512 b) {
                 'vfmadd132ps': { intrinsic: '_mm512_fmadd_ps', args: [0, 2, 1] },
             }
 
-            // remove comment
-            line = line.split('#')[0]
             tokens = line.split(' ');
             tokens = tokens.map((token) => trim(token, ','));
             tokens = tokens.filter((token) => token != '');
@@ -309,13 +310,12 @@ __m512 matrix_multiply(__m512 a, __m512 b) {
             return s;
         }
 
-        compile = () => {
+        const gcc_id = "gsnapshot";
+        const clang_id = "clang_trunk";
+        
+        compile = (compiler_id) => {
             document.getElementById("progress").style = "opacity: 1;";
-
             const api = "https://godbolt.org/api/";
-            const gcc_id = "gsnapshot";
-            const clang_id = "clang_trunk";
-            const compiler_id = gcc_id;
             const source = document.getElementById('source_code').value;
             const args = document.getElementById('args').value == "" ? "-Ofast -std=c++20 -mavx512f" : document.getElementById('args').value;
 
