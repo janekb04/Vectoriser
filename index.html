@@ -205,7 +205,7 @@
         <div class="bar">
             <input class="args" type="text" name="args" id="args" placeholder="-Ofast -std=c++20 -mavx512f" />
             <button class="compile" onclick="compile(gcc_id)">GCC</button>
-            <button class="compile" onclick="compile(clang_id)">GCC</button>
+            <button class="compile" onclick="compile(clang_id)">Clang</button>
         </div>
 
         <textarea name="source_code" type="text" id="source_code"></textarea>
@@ -262,7 +262,7 @@ __m512 matrix_multiply(__m512 a, __m512 b) {
             // function name
             if (line.includes('(')) {
                 tokens = line.split('(');
-                return addClass("__m512", 'type') + ' ' + addClass(tokens[0], 'function') + '(' + addClass("__m512", 'type') + ' ' + addClass('zmm0', 'argument') + ', ' + addClass("__m512", 'type') + ' ' + addClass('zmm1', 'argument') + ') {';
+                return addClass(tokens[0], 'function') + ':';
             }
 
             translation = {
@@ -290,7 +290,14 @@ __m512 matrix_multiply(__m512 a, __m512 b) {
             if (statement.args.length > 0) {
                 if (!declared_registers.includes(statement.args[0])) {
                     declared_registers.push(statement.args[0]);
-                    s += addClass("__m512 ", 'type');
+                    if (statement.args[0][0] == 'x')
+                        s += addClass("__m128 ", 'type');
+                    else if (statement.args[0][0] == 'y')
+                        s += addClass("__m256 ", 'type');
+                    else if (statement.args[0][0] == 'z')
+                        s += addClass("__m512 ", 'type');
+                    else
+                        s += addClass("??? ", 'type');
                 }
                 s += addClass(statement.args[0], 'argument') + " = ";
             }
@@ -304,7 +311,7 @@ __m512 matrix_multiply(__m512 a, __m512 b) {
                 s += addClass("return ", 'type') + addClass("zmm0", 'argument') + ';';
             }
             else {
-                s += "Unknown intrinsic";
+                s += "Unknown intrinsic " + statement.op;
             }
 
             return s;
@@ -350,7 +357,6 @@ __m512 matrix_multiply(__m512 a, __m512 b) {
                         data.asm.forEach((asm) => {
                             output.innerHTML += transpile(asm.text, declared_registers) + '<br>';
                         });
-                        output.innerHTML += '}';
                     }
                     document.getElementById("progress").style = "opacity: 0;";
                 });
