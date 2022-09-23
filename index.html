@@ -271,6 +271,7 @@ __m512 matrix_multiply(__m512 a, __m512 b) {
                 'vmulps': { intrinsic: '_mm512_mul_ps', args: [1, 2] },
                 'vdivps': { intrinsic: '_mm512_div_ps', args: [1, 2] },
                 'vpermilps': { intrinsic: '_mm512_permute_ps', args: [1, 2] },
+                'vperm2f128': { intrinsic: '_mm256_permute2f128_ps', args: [1, 2, 3] },
                 'vshuff32x4': { intrinsic: '_mm512_shuffle_f32x4', args: [1, 2, 3] },
                 'vshuff64x2': { intrinsic: '_mm512_shuffle_f64x2', args: [1, 2, 3] },
                 'vfmadd231ps': { intrinsic: '_mm512_fmadd_ps', args: [1, 2, 0] },
